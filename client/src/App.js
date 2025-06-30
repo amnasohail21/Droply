@@ -6,8 +6,12 @@ import {
   createPost,
   votePost,
 } from "./services/api";
+import './App.css';
 
 function App() {
+  const [dropImage, setDropImage] = useState(null);
+  const [postImage, setPostImage] = useState(null);
+
   const [drops, setDrops] = useState([]);
   const [newDropTitle, setNewDropTitle] = useState("");
   const [selectedDrop, setSelectedDrop] = useState(null);
@@ -48,16 +52,43 @@ function App() {
 
   const handleCreateDrop = async () => {
     if (!newDropTitle) return;
-    await createDrop({ title: newDropTitle });
-    setNewDropTitle("");
-    fetchDrops();
+
+    const formData = new FormData();
+    formData.append("title", newDropTitle);
+    if (dropImage) formData.append("image", dropImage);
+
+    try {
+      await fetch("http://localhost:3001/drops", {
+        method: "POST",
+        body: formData,
+      });
+      setNewDropTitle("");
+      setDropImage(null);
+      fetchDrops();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleCreatePost = async () => {
     if (!newPostContent || !selectedDrop) return;
-    await createPost({ dropId: selectedDrop._id, content: newPostContent });
-    setNewPostContent("");
-    fetchPosts(selectedDrop._id);
+
+    const formData = new FormData();
+    formData.append("dropId", selectedDrop._id);
+    formData.append("content", newPostContent);
+    if (postImage) formData.append("image", postImage);
+
+    try {
+      await fetch("http://localhost:3001/posts", {
+        method: "POST",
+        body: formData,
+      });
+      setNewPostContent("");
+      setPostImage(null);
+      fetchPosts(selectedDrop._id);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleVote = async (postId, voteValue) => {
@@ -83,11 +114,24 @@ function App() {
     <div style={{ padding: 20 }}>
       <h1>Droply</h1>
 
+      <h3>Create New Drop</h3>
       <input
-        placeholder="New drop title"
+        placeholder="Drop title"
         value={newDropTitle}
         onChange={(e) => setNewDropTitle(e.target.value)}
       />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setDropImage(e.target.files[0])}
+      />
+      {dropImage && (
+        <img
+          src={URL.createObjectURL(dropImage)}
+          alt="Preview"
+          style={{ height: 100, marginTop: 10 }}
+        />
+      )}
       <button onClick={handleCreateDrop}>Create Drop</button>
 
       <hr />
@@ -102,7 +146,14 @@ function App() {
               fontWeight: selectedDrop?._id === drop._id ? "bold" : "normal",
             }}
           >
-            {drop.title}
+            {drop.image && (
+              <img
+                src={`http://localhost:3001${drop.image}`}
+                alt="drop"
+                style={{ height: 60, marginBottom: 6, borderRadius: 6 }}
+              />
+            )}
+            <p>{drop.title}</p>
           </li>
         ))}
       </ul>
@@ -117,11 +168,31 @@ function App() {
             value={newPostContent}
             onChange={(e) => setNewPostContent(e.target.value)}
           />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setPostImage(e.target.files[0])}
+          />
+          {postImage && (
+            <img
+              src={URL.createObjectURL(postImage)}
+              alt="Preview"
+              style={{ height: 100, marginTop: 10 }}
+            />
+          )}
           <button onClick={handleCreatePost}>Add Post</button>
 
           <ul>
             {posts.map((post) => (
               <li key={post._id} style={{ marginBottom: 10 }}>
+                {post.image && (
+                  <img
+                    src={`http://localhost:3001${post.image}`}
+                    alt="post"
+                    style={{ height: 100, marginBottom: 8, borderRadius: 6 }}
+                  />
+                )}
+
                 <p>{post.content}</p>
                 <p>Votes: {post.votes || 0}</p>
 

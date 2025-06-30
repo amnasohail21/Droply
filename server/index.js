@@ -9,6 +9,22 @@ const cors = require("cors");
 const app = express();
 const PORT = 3001;
 
+const multer = require("multer");
+const path = require("path");
+
+// Serve images statically
+app.use("/uploads", express.static("uploads"));
+
+// Multer setup
+const storage = multer.diskStorage({
+    destination: "uploads/",
+    filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // unique filename
+    }, 
+});
+const upload = multer({ storage });
+
+
 app.use(cors());
 app.use(express.json());
 
@@ -97,6 +113,45 @@ app.post("/posts/:postId/vote", async (req, res) => {
         await post.save();
 
         res.json(post);
+    }   catch (err) {
+            res.status(500).json({ message: err.message });
+    }
+});
+
+app.post("/drops", upload.single("image"), async (req, res) => {
+    const { title, expiresAt } = req.body;
+    const image = req.file ? `/uploads/${req.file.filename}` : null;
+
+    if (!title) return res.status(400).json({ message: "Title is required" });
+
+    try {
+        const newDrop = new Drop({ title, expiresAt, image });
+        await newDrop.save();
+        res.status(201).json(newDrop);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post("/posts", upload.single("image"), async (req, res) => {
+    const { dropId, content, userId, phone } = req.body;
+    const image = req.file ? `/uploads/${req.file.filename}` : null;
+
+    if (!dropId || !content) {
+        return res.status(400).json({ message: "dropId and content are required" });
+    }
+
+    try {
+        const newPost = new Post({
+        dropId,
+        content,
+        image,
+        userId: userId || null,
+        phone: phone || null,
+        });
+
+        await newPost.save();
+        res.status(201).json(newPost);
     }   catch (err) {
             res.status(500).json({ message: err.message });
     }
