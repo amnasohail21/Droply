@@ -1,23 +1,50 @@
-import logo from './logo.svg';
-import './App.css';
+import { useEffect, useState } from "react";
+import { getDrops, createDrop } from "./services/api";
 
 function App() {
+  const [drops, setDrops] = useState([]);
+  const [newTitle, setNewTitle] = useState("");
+
+  useEffect(() => {
+    fetchDrops();
+  }, []);
+
+  const fetchDrops = async () => {
+    try {
+      const res = await getDrops();
+      setDrops(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateDrop = async () => {
+    if (!newTitle) return;
+    try {
+      await createDrop({ title: newTitle });
+      setNewTitle("");
+      fetchDrops();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ padding: "20px" }}>
+      <h1>Droply</h1>
+
+      <input
+        placeholder="New drop title"
+        value={newTitle}
+        onChange={(e) => setNewTitle(e.target.value)}
+      />
+      <button onClick={handleCreateDrop}>Create Drop</button>
+
+      <ul>
+        {drops.map((drop) => (
+          <li key={drop._id}>{drop.title}</li>
+        ))}
+      </ul>
     </div>
   );
 }
