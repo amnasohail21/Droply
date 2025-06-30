@@ -89,14 +89,19 @@ app.post("/posts/:postId/vote", async (req, res) => {
         const post = await Post.findById(req.params.postId);
         if (!post) return res.status(404).json({ message: "Post not found" });
 
-        post.votes += 1;
+      // Get vote change from request body, default to +1 if not provided
+        const { vote } = req.body;
+        const voteChange = vote === -1 ? -1 : 1;
+
+        post.votes = (post.votes || 0) + voteChange;
         await post.save();
 
         res.json(post);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    }   catch (err) {
+            res.status(500).json({ message: err.message });
     }
 });
+
 
 // Start Server (at the end)
 app.listen(PORT, () => {
